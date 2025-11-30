@@ -11,8 +11,7 @@ from std_msgs.msg import ColorRGBA
 class DWAPlanner(Node):
     def __init__(self):
         super().__init__('dwa_local_planner')
-
-        # Parameters (tuned)
+#tuned parameters (from trial and error)
         self.declare_parameter('max_vel_x', 0.22)
         self.declare_parameter('min_vel_x', 0.02)
         self.declare_parameter('max_vel_theta', 2.84)
@@ -43,13 +42,11 @@ class DWAPlanner(Node):
         self.vel_cost_gain = self.get_parameter('vel_cost_gain').value
         self.smooth_cost_gain = self.get_parameter('smooth_cost_gain').value
 
-        # State
         self.odom = None
         self.scan = None
         self.goal = None
         self.current_vel = (0.0, 0.0)  # vx, w
 
-        # Subscriptions & publishers
         self.create_subscription(Odometry, '/odom', self.odom_cb, 10)
         self.create_subscription(LaserScan, '/scan', self.scan_cb, 10)
 
@@ -64,8 +61,8 @@ class DWAPlanner(Node):
         self.create_timer(self.dt, self.timer_cb)
 
         self.get_logger().info('DWA planner node started')
-
-    # ---------- callbacks ----------
+        
+        #callbacks
     def odom_cb(self, msg: Odometry):
         self.odom = msg
         vx = msg.twist.twist.linear.x
@@ -80,7 +77,6 @@ class DWAPlanner(Node):
         self.goal = msg
         self.get_logger().info(f'Received new goal')
 
-    # ---------- main loop ----------
     def timer_cb(self):
         if self.odom is None or self.scan is None or self.goal is None:
             return
@@ -96,7 +92,7 @@ class DWAPlanner(Node):
         self.cmd_pub.publish(cmd)
         self.get_logger().debug(f'Cmd published: v={cmd.linear.x:.3f}, w={cmd.angular.z:.3f}, cost={best["cost"]:.3f}')
 
-    # ---------- DWA core ----------
+    # DWA logic 
     def compute_dwa(self):
         # robot pose
         rx = self.odom.pose.pose.position.x
@@ -149,7 +145,7 @@ class DWAPlanner(Node):
                 if clearance < (self.robot_radius * 0.6):
                     continue
 
-                # cost components
+                # cost 
                 endx, endy, endyaw = traj[-1]
                 goal_cost = math.hypot(gx - endx, gy - endy)  # smaller is better
                 vel_cost = (self.max_vel_x - v)  # prefer larger v
@@ -164,7 +160,7 @@ class DWAPlanner(Node):
                 if best is None or total_cost < best['cost']:
                     best = {'v': v, 'w': w, 'cost': total_cost, 'traj': traj, 'clearance': clearance}
 
-                # trajectory marker (thin)
+                # trajectory marker (
                 m = Marker()
                 m.header.frame_id = 'odom'
                 m.header.stamp = self.get_clock().now().to_msg()
@@ -178,7 +174,6 @@ class DWAPlanner(Node):
                 m.points = [Point(x=px, y=py, z=0.0) for (px, py, pth) in traj]
                 markers.markers.append(m)
 
-        # publish markers and highlight best
         if best is not None:
             chosen = Marker()
             chosen.header.frame_id = 'odom'
@@ -202,12 +197,10 @@ class DWAPlanner(Node):
             self.publish_stop()
             return None
 
-        # log chosen candidate for debugging
         self.get_logger().info(f"Chosen candidate: v={best['v']:.3f}, w={best['w']:.3f}, cost={best['cost']:.3f}, clearance={best['clearance']:.3f}")
 
         return best
 
-    # ---------- helpers ----------
     def predict_trajectory(self, x, y, yaw, v, w):
         t = 0.0
         traj = []
