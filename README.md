@@ -1,17 +1,17 @@
 # Custom DWA Local Planner (ROS2 Humble)
 
-A simple custom Dynamic Window Approach (DWA) local planner for TurtleBot3 running in ROS2 Humble. This node reads odometry, laser scan, and a goal from RViz, then publishes `/cmd_vel` commands based on sampled trajectories.
+A custom Dynamic Window Approach (DWA) local planner implemented from scratch for TurtleBot3 in ROS2 Humble. This planner navigates the robot to goals while avoiding obstacles using velocity sampling, trajectory prediction, and cost-based evaluation.
 
-## Prerequisites
+## Implementation Details
 
-- ROS2 Humble
-- TurtleBot3 packages
-- Gazebo
-- RViz2
+- **Velocity Sampling**: Samples velocity commands within the robot's dynamic constraints
+- **Trajectory Prediction**: Simulates forward trajectories for each velocity sample
+- **Cost Function**: Evaluates trajectories based on distance to goal, obstacle avoidance, and path smoothness
+- **ROS2 Integration**: Subscribes to `/odom` and `/scan`, publishes `/cmd_vel`, visualizes trajectories in RViz
 
 ## Setup
 
-### 1. Create or use a ROS2 workspace
+### 1. Create a ROS2 workspace
 
 ```bash
 mkdir -p ~/ros2_ws/src
@@ -29,19 +29,12 @@ git clone https://github.com/saumyaezhil/Custom-DWA-Local-Planner.git
 ```bash
 cd ~/ros2_ws
 colcon build --packages-select dwa_local_planner --symlink-install
-```
-
-### 4. Source the workspace
-
-```bash
 source install/setup.bash
 ```
 
 ## Running
 
-### 1. Launch TurtleBot3 in Gazebo
-
-Open a terminal and run:
+### Terminal 1: Launch TurtleBot3 in Gazebo
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -49,9 +42,7 @@ export TURTLEBOT3_MODEL=burger
 ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 ```
 
-### 2. Start the DWA planner
-
-Open a new terminal:
+### Terminal 2: Start the DWA planner
 
 ```bash
 cd ~/ros2_ws
@@ -59,31 +50,14 @@ source install/setup.bash
 ros2 run dwa_local_planner simple_dwa
 ```
 
-### 3. Open RViz
-
-Open another terminal:
+### Terminal 3: Open RViz
 
 ```bash
 source /opt/ros/humble/setup.bash
 ros2 run rviz2 rviz2
 ```
 
-In RViz, configure the following:
-
-1. **Set Fixed Frame** → `odom`
-2. **Add displays:**
-   - LaserScan
-   - Odometry
-   - TF
-   - MarkerArray (topic: `/dwa_trajectories`)
-3. **Use 2D Nav Goal** tool to send a goal to the robot
-
-The robot should begin to move toward the selected goal while avoiding obstacles.
-
-## Features
-
-- Dynamic Window Approach for local path planning
-- Real-time obstacle avoidance using laser scan data
-- Trajectory visualization in RViz
-- Interactive goal setting via RViz
-
+**RViz Configuration:**
+- Set Fixed Frame to `odom`
+- Add: LaserScan, Odometry, TF, MarkerArray (`/dwa_trajectories`)
+- Use 2D Nav Goal tool to send navigation goals
